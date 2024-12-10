@@ -4,8 +4,8 @@ use crate::token::Token;
 
 #[derive(Clone, Default)]
 pub struct Span {
-    begin: u32,
-    end: u32,
+    begin: usize,
+    end: usize,
 }
 
 #[derive(Clone, Default)]
@@ -16,27 +16,27 @@ struct TokenInfo {
 }
 
 pub struct Scanner<'a> {
-    literals: Vec<String>,
+    literals: String,
     current: TokenInfo,
     next: TokenInfo,
-    position: u32,
+    position: usize,
     peekable: Peekable<Chars<'a>>,
+    c0: Option<char>
 }
 
 impl Scanner<'_> {
 
-    pub fn new<'a>(code: &'a str, position: u32) -> Scanner<'a> {
+    pub fn new<'a>(code: &'a str) -> Scanner<'a> {
+        let mut peekable = code.chars().peekable();
+        let ch = peekable.next();
         Scanner {
-            literals: Vec::new(),
+            literals: String::new(),
             current: Default::default(),
             next: Default::default(),
-            position: position,
-            peekable: code.chars().peekable(),
+            position: 0,
+            peekable: peekable,
+            c0: ch,
         }
-    }
-
-    pub fn init(&mut self) {
-
     }
 
     pub fn location(&self) -> Span {
@@ -47,225 +47,332 @@ impl Scanner<'_> {
         self.next.location.clone()
     }
 
-    pub fn next(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.current = self.next.clone();
         self.scan();
         self.current.token.clone()
     }
 
-    pub fn peek(&self) -> Token {
+    pub fn peek_token(&self) -> Token {
         self.next.token.clone()
     }
 
-    pub fn advance(&mut self) {
-        self.peekable.next();
-    }
-
     pub fn scan(&mut self) {
-        //let token = self.scan_token();
-        // let len = 0;
-        // while token == Token::Comment(len) {
-        //     self.skip_white_space();
-        //     self.next.location.begin = self.position;
-        //     token = self.scan_token()
-        // }
-        //self.current.token = token;
-
-        self.current.token = self.scan_token();
+        let mut token = Token::Illegal;
+        loop {
+            self.next.location.begin = self.position;
+            self.skip_whitespace();
+            token = self.scan_token();
+            if token != Token::Comment {
+                break;
+            }
+        }
+        self.next.location.end = self.position;
+        self.current.token = token;
     }
 
-    fn skip_white_space(&mut self) {
-        while self.peekable.next_if(|&ch| ch == ' ').is_some() {
-            self.advance()
+    fn skip_whitespace(&mut self) {
+        loop {
+            match self.peek_char() {
+                Some(' ') | Some('\n') | Some('\r') => { let _ = self.next_char();},
+                _ => break
+            }
         }
     }
 
     pub fn scan_token(&mut self) -> Token {
-        match self.peekable.peek() {
-            Some(&ch) => match ch {
-                '"' => self.scan_string(),
-                '\'' => self.scan_string(),
-                '<' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::Lte),
-                        Some('<') => self.select_if('=', Token::AssignShl, Token::Shl),
-                        None => Token::Eos,
-                        _ => Token::Lt,
-                    }
-                },
-                '>' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::Gte),
-                        Some('>') => {
-                            match self.peekable.next() {
-                                Some('=') => self.select(Token::AssignSar),
-                                Some('>') => self.select_if('=', Token::AssignShr, Token::Shr),
-                                _ => Token::Sar
-                            }
-                        },
-                        None => Token::Eos,
-                        _ => Token::Gt,
-                    }
-                },
-                '=' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::Eq),
-                        _ => Token::Assign
-                    }
-                },
-                '!' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::Ne),
-                        _ => Token::Not
-                    }
-                },
-                '+' => {
-                    match self.peekable.next() {
-                        Some('+') => self.select(Token::Inc),
-                        Some('=') => self.select(Token::AssignAdd),
-                        _ => Token::Add,
-                    }
-                },
-                '-' => {
-                    match self.peekable.next() {
-                        Some('-') => self.select(Token::Dec),
-                        Some('=') => self.select(Token::AssignSub),
-                        _ => Token::Sub,
-                    }
-                },
-                '*' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::AssignMul),
-                        _ => Token::Mul,
-                    }
-                },
-                '%' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::AssignMod),
-                        _ => Token::Mod,
-                    }
-                },
-                '/' => {
-                    match self.peekable.next() {
-                        Some('/') => self.skip_single_line_comment(),
-                        Some('*') => self.skip_multi_line_comment(),
-                        Some('=') => self.select(Token::AssignDiv),
-                        _ => Token::Div
-                    }
-                },
-                '&' => {
-                    match self.peekable.next() {
-                        Some('&') => self.select(Token::And),
-                        Some('=') => self.select(Token::AssignBitAnd),
-                        _ => Token::BitAnd
-                    }
-                },
-                '|' => {
-                    match self.peekable.next() {
-                        Some('|') => self.select(Token::Or),
-                        Some('=') => self.select(Token::AssignBitOr),
-                        _ => Token::BitOr
-                    }
-                },
-                '^' => {
-                    match self.peekable.next() {
-                        Some('=') => self.select(Token::AssignBitXor),
-                        _ => Token::BitXor
-                    }
-                },
-                '.' => {
-                    let digit = self.peekable.next().unwrap();
-                    if self.is_decimal_digit(digit) {
-                        return self.scan_number();
-                    }
-                    return Token::Period;
-                },
-                ':' => self.select(Token::Colon),
-                ';' => self.select(Token::Semicolon),
-                ',' => self.select(Token::Comma),
-                '(' => self.select(Token::Lparen),
-                ')' => self.select(Token::Rparen),
-                '[' => self.select(Token::Lbrack),
-                ']' => self.select(Token::Rbrack),
-                '{' => self.select(Token::Lbrace),
-                '}' => self.select(Token::Rbrace),
-                '?' => self.select(Token::Conditional),
-                '~' => self.select(Token::BitNot),
-                _ => {
-                    //println!("Default => ");
-                    let c0 = self.peekable.peek();
-                    if c0.unwrap().is_ascii() {
-                        //println!("Identifier");
-                        //if c0 in "a..z".range() {
-                            return self.scan_identifier()
-                        //}
-                        //if c0 in "0..1".range() {
-                        //    return self.scan_number();
-                        //}
-                    } else if c0 == None {
-                        //println!("Eos");
-                        return Token::Eos;
-                    } else {
-                        //println!("Illegal");
-                        return Token::Illegal;
-                    }
-
+        match self.peek_char() {
+            Some('"') | Some('\'') => self.scan_string(),
+            Some('<') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::Lte),
+                    None => Token::Eos,
+                    _ => Token::Lt,
                 }
             },
-            None => { println!("None => EOS"); Token::Eos }
+            Some('>') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::Gte),
+                    None => Token::Eos,
+                    _ => Token::Gt,
+                }
+            },
+            Some('=') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::Eq),
+                    _ => Token::Assign
+                }
+            },
+            Some('+') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignAdd),
+                    _ => Token::Add,
+                }
+            },
+            Some('-') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignSub),
+                    Some('>') => self.select(Token::RArrow),
+                    _ => Token::Sub,
+                }
+            },
+            Some('*') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignMul),
+                    _ => Token::Mul,
+                }
+            },
+            Some('%') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignMod),
+                    _ => Token::Mod,
+                }
+            },
+            Some('/') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignDiv),
+                    Some('/') => {
+                        match self.next_char() {
+                            Some('=') => self.select(Token::DivDivEqual),
+                            _ => Token::DivDiv
+                        }
+                    },
+                    _ => Token::Div
+                }
+            },
+            Some('&') => {
+                match self.next_char() {
+                    Some('&') => self.select(Token::And),
+                    Some('=') => self.select(Token::AssignBitAnd),
+                    _ => Token::BitAnd
+                }
+            },
+            Some('|') => {
+                match self.next_char() {
+                    Some('|') => self.select(Token::Or),
+                    Some('=') => self.select(Token::AssignBitOr),
+                    _ => Token::BitOr
+                }
+            },
+            Some('^') => {
+                match self.next_char() {
+                    Some('=') => self.select(Token::AssignBitXor),
+                    _ => Token::BitXor
+                }
+            },
+            Some('.') => {
+                let ch = self.next_char();
+                if self.is_decimal_digit(ch) {
+                    return self.scan_number();
+                }
+                return Token::Period;
+            },
+            Some('#') => self.skip_single_line_comment(),
+            Some(':') => self.select(Token::Colon),
+            Some(',') => self.select(Token::Comma),
+            Some('(') => self.select(Token::Lparen),
+            Some(')') => self.select(Token::Rparen),
+            Some('[') => self.select(Token::Lbrack),
+            Some(']') => self.select(Token::Rbrack),
+            Some('{') => self.select(Token::Lbrace),
+            Some('}') => self.select(Token::Rbrace),
+            Some('~') => self.select(Token::BitNot),
+            Some('0'..='9') => self.scan_number(),
+            Some('a'..='z') | Some('A'..='Z') => self.scan_identifier(),
+            Some(_) => self.select(Token::Illegal),
+            None => Token::Eos
+        }
+    }
+
+    fn peek_char(&self) -> Option<char> {
+        self.c0
+    }
+
+    fn next_char(&mut self) -> Option<char> {
+        self.c0 = self.peekable.next();
+        self.position += 1;
+        self.c0
+    }
+
+    fn scan_keyword(&self) -> Option<Token> {
+        let keyword = self.literal();
+        match keyword {
+            "and" => Some(Token::And),
+            "as" => Some(Token::As),
+            "assert" => Some(Token::Assert),
+            "break" => Some(Token::Break),
+            "impl" => Some(Token::Impl),
+            "continue" => Some(Token::Continue),
+            "fn" => Some(Token::Fn),
+            "del" => Some(Token::Del),
+            "elif" => Some(Token::Elif),
+            "else" => Some(Token::Else),
+            "except" => Some(Token::Except),
+            "finally" => Some(Token::Finally),
+            "for" => Some(Token::For),
+            "from" => Some(Token::From),
+            "global" => Some(Token::Global),
+            "if" => Some(Token::If),
+            "use" => Some(Token::Use),
+            "in" => Some(Token::In),
+            "is" => Some(Token::Is),
+            "lambda" => Some(Token::Lambda),
+            "nonlocal" => Some(Token::Nonlocal),
+            "not" => Some(Token::Not),
+            "or" => Some(Token::Or),
+            "pass" => Some(Token::Pass),
+            "raise" => Some(Token::Raise),
+            "return" => Some(Token::Return),
+            "struct" => Some(Token::Struct),
+            "try" => Some(Token::Try),
+            "while" => Some(Token::While),
+            "with" => Some(Token::With),
+            "yeld" => Some(Token::Yeld),
+            _ => None
+        }
+
+    }
+
+    fn scan_literal(&self) -> Option<Token> {
+        let literal = self.literal();
+        match literal {
+            "bool" => Some(Token::Bool),
+            "float" => Some(Token::Float),
+            "int" => Some(Token::Int),
+            "str" => Some(Token::Str),
+            "none" => Some(Token::NoneLiteral),
+            "True" => Some(Token::TrueLiteral),
+            "False" => Some(Token::FalseLiteral),
+            _ => None
         }
     }
 
     fn skip_single_line_comment(&mut self) -> Token {
-        let mut ch = self.peekable.next();
-        while ch != Some('\n') {
-            ch = self.peekable.next();
+        loop {
+            match self.peek_char() {
+                Some('\n') => break,
+                None => break,
+                _ => {self.next_char();},
+            };
         }
-        return Token::Comment(0);
+        return Token::Comment;
     }
 
     fn skip_multi_line_comment(&mut self) -> Token {
-        return Token::Comment(0);
+        return Token::Comment;
     }
 
     fn scan_identifier(&mut self) -> Token {
-        let tok = Token::Identifier("hello".chars().collect());
-        self.advance();
-        tok
+        self.start_literal();
+        while self.is_character(self.peek_char()) || self.is_decimal_digit(self.peek_char()) {
+            self.add_char(self.peek_char());
+            self.next_char();
+        }
+        self.end_literal();
+        let mut tok = self.scan_keyword();
+        if tok.is_some() {
+            return tok.unwrap();
+        }
+        tok = self.scan_literal();
+        if tok.is_some() {
+            return tok.unwrap();
+        }
+        let identifier = self.literal();
+        Token::Identifier{value: identifier.to_string()}
     }
 
     fn scan_number(&mut self) -> Token {
-        let tok = Token::Number("0".chars().collect());
-        self.advance();
-        tok
+        self.start_literal();
+        let mut ch = self.peek_char();
+        while self.is_decimal_digit(ch) {
+            self.add_char(ch);
+            ch = self.next_char();
+        }
+        self.end_literal();
+        let number = self.literal();
+        return Token::Number{value: number.to_string()};
     }
 
     fn scan_string(&mut self) -> Token {
-        let tok = Token::String("hello".chars().collect());
-        self.advance();
-        tok
+        // fixme: naive implementation
+        let mut string_begin = false;
+        let mut ch = self.peek_char();
+        while self.is_character(ch) || self.is_decimal_digit(ch) || ch == Some(' ') || ch == Some('\'') || ch == Some('"') {
+            if ch == Some('\'') || ch == Some('"') {
+                if string_begin {
+                    self.end_literal();
+                    let _ = self.next_char();
+                    break;
+                } else {
+                    self.start_literal();
+                    ch = self.next_char();
+                    string_begin = true;
+                    continue;
+                }
+            }
+            self.add_char(ch);
+            ch = self.next_char();
+        }
+
+        let string = self.literal();
+        return Token::String{value: string.to_string()};
     }
 
     fn select(&mut self, tok: Token) -> Token {
-        self.advance();
+        self.next_char();
         tok
     }
 
     fn select_if(&mut self, ch: char, then: Token, el: Token) -> Token {
-        let c0 = self.peekable.next();
-        if ch == c0.unwrap() {
-            self.advance();
+        if Some(ch) == self.next_char() {
             return then
         }
         el
     }
 
-    fn is_decimal_digit(&self, ch: char) -> bool {
-        // FIXME: this is bollocks
-        if ch == '0' {
-            return true;
+    fn is_character(&self, ch: Option<char>) -> bool {
+        match ch {
+            Some('a'..='z') | Some('A'..='Z') => true,
+            _ => false
         }
-        false
     }
 
+    fn is_decimal_digit(&self, ch: Option<char>) -> bool {
+        match ch {
+            Some('0'..='9') => true,
+            _ => false,
+        }
+    }
+
+    fn add_char(&mut self, ch: Option<char>) {
+        if ch.is_some() {
+            self.literals.push(ch.unwrap());
+        }
+    }
+
+    fn start_literal(&mut self) {
+        self.next.literal.begin = self.literals.len();
+    }
+
+    fn end_literal(&mut self) {
+        self.next.literal.end = self.literals.len();
+        self.add_char(Some(0 as char));
+    }
+
+    fn literal(&self) -> &str {
+        &self.literals[self.next.literal.begin..self.next.literal.end]
+    }
+
+}
+
+impl Iterator for Scanner<'_> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let tok = self.next_token();
+        match tok {
+            Token::Eos => None,
+            _ => Some(tok)
+        }
+    }
 }

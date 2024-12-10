@@ -10,127 +10,90 @@ pub enum Token {
     Lbrace, // "{"
     Rbrace, // "}"
     Colon, // ":"
-    Semicolon, //";"
+    Semicolon, // ";"
     Period, // "."
-    Conditional, // "?"
-    Inc, // "++"
-    Dec, // "--"
-
-    /* Assignment operators. */
+    DivDiv,  // '//'
+    DivDivEqual, // "//="
+    At, // @
+    AtEqual, // @=
+    RArrow, // ->
+    Ellipses, // ...
     Assign, // "="
-    AssignBitOr, // "|="
-    AssignBitXor, // "^="
-    AssignBitAnd, // "&="
-    AssignShl, // "<<="
-    AssignSar, // ">>="
-    AssignShr, // ">>>="
-    AssignAdd, // "+="
-    AssignSub, // "-="
-    AssignMul, // "*="
-    AssignDiv, // "/="
-    AssignMod, // "%="
-
-    /* Binary operators sorted by precedence. */
-    Comma, // ","
-    Or, // "||"
-    And, // "&&"
-    BitOr, // "|"
-    BitXor, // "^"
-    BitAnd, // "&"
-    Shl, // "<<"
-    Sar, // ">>"
-    Shr, // ">>>"
-    Add, // "+"
-    Sub, // "-"
-    Mul, // "*"
-    Div, // "/"
-    Mod, // "%"
-
-    /* Compare operators sorted by precedence. */
-    Eq, // "=="
-    Ne, // "!="
-    Lt, // "<"
-    Gt, // ">"
-    Lte, // "<="
-    Gte, // ">="
-    In, // "in"
-
-    /* Unary operators. */
-    Not, // "!"
-    BitNot, // "~"
-    Delete, // "delete"
-    Typeof, // "typeof"
-    Void, // "void"
-
-    /* Keywords */
+    AssignBitOr, // "|=" VbarEqual
+    AssignBitXor, // "^=" CircumflexEqual
+    AssignBitAnd, // "&=" AmperEqual
+    AssignAdd, // "+=" PlusEqual
+    AssignSub, // "-=" MinusEqual
+    AssignMul, // "*=" StarEqual
+    AssignDiv, // "/=" SlashEqual
+    AssignMod, // "%=" PercentEqual
+    AssignLsh, // "<<="
+    AssignRsh, // ">>="
+    AssignMulMul, // "**="
+    AssignColon, // :=
+    Comma, // "," Comma
+    BitOr, // "|" Vbar
+    BitXor, // "^" CircumFlex
+    BitAnd, // "&" Amper
+    Add, // "+" Plus
+    Sub, // "-" Minus
+    Mul, // "*" Star
+    Div, // "/" Slash
+    Mod, // "%" Percent
+    MulMul, // "**" DoubleStar
+    Eq, // "==" EqEqual
+    Ne, // "!=" NotEqual
+    Lt, // "<" Less
+    Gt, // ">" Greater
+    Lte, // "<=" LessEqual
+    Gte, // ">=" GreaterEqual
+    BitNot, // "~" Tilde
+    Shl,  // <<
+    Shr, // >>
+    Exclamation, // "!"
+    And, // "and"
+    As, // "as"
+    Assert, // "assert"
     Break, // "break"
-    Case, // "case"
-    Catch, // "catch"
+    Impl, // "impl"
     Continue, // "continue"
-    Default, // "default"
-    /* DELETE */
-    Do, // "do"
+    Fn, // "fn"
+    Del, // "del"
+    Elif, // "elif"
     Else, // "else"
+    Except, // "except"
     Finally, // "finally"
     For, // "for"
-    Function, // "function"
+    From, // "from"
+    Global, // "global"
     If, // "if"
-    /* IN */
-    /* INSTANCEOF */
-    New, // "new"
+    Use, // "use"
+    In, // "in"
+    Is, // "is"
+    Lambda, // "lambda"
+    Nonlocal, // "nonlocal"
+    Not, // "not"
+    Or, // "or"
+    Pass, // "pass"
+    Raise, // "raise"
     Return, // "return"
-    Switch, // "switch"
-    This, // "this"
-    Throw, // "throw"
     Try, // "try"
-    /* TYPEOF */
-    Var, // "var"
-    /* VOID */
     While, // "while"
     With, // "with"
-
-    /* reserved words ??*/
-    Abstract, // "abstract"
-    Boolean, // "boolean"
-    Byte, // "byte"
-    Char, // "char"
-    Class, // "class"
-    Const, // "const"
-    Double, // "double"
-    Enum, // "enum"
-    Export, // "export"
-    Extends, // "extends"
-    Final, // "final"
+    Yeld, // "yeld"
+    Bool, // "bool"
     Float, // "float"
-    Goto, // "goto"
-    Implements, // "implements"
-    Import, // "import"
     Int, // "int"
-    Interface, // "interface"
-    Long, // "long"
-    Native, // "native"
-    Package, // "package"
-    Private, // "private"
-    Protected, // "protected"
-    Public, // "public"
-    Short, // "short"
-    Static, // "static"
-    Super, // "super"
-    Throws, // "throws"
-
-    NullLiteral, // "null"
-    TrueLiteral, // "true"
-    FalseLiteral, // "false"
-    Number(Vec<char>),
-    String(Vec<char>),
-
-    /* Identifiers (not keywords or future reserved words). */
-    Identifier(Vec<char>),
-
-    /* Illegal token - not able to scan. */
-    Illegal, // "Illegal"
-
-    Comment(u32)
+    Str, // "str"
+    Struct, // "struct"
+    NoneLiteral, // "none"
+    TrueLiteral, // "True"
+    FalseLiteral, // "False"
+    Number {value: String},
+    String {value: String},
+    Identifier {value: String},
+    Illegal, // "Illegal" => not able to scan.
+    Comment
 }
 
 impl Token {
@@ -146,113 +109,98 @@ impl Token {
             Token::Colon => ":".to_string(),
             Token::Semicolon => ";".to_string(),
             Token::Period => ".".to_string(),
-            Token::Conditional => "?".to_string(),
-            Token::Inc => "++".to_string(),
-            Token::Dec => "--".to_string(),
+            Token::DivDiv => "//".to_string(),
+            Token::DivDivEqual => "//=".to_string(),
+            Token::At => "@".to_string(),
+            Token::AtEqual => "@=".to_string(),
+            Token::RArrow => "=>".to_string(),
+            Token::Ellipses => "...".to_string(),
             Token::Assign => "=".to_string(),
             Token::AssignBitOr => "|=".to_string(),
             Token::AssignBitXor => "^=".to_string(),
             Token::AssignBitAnd => "&=".to_string(),
-            Token::AssignShl => "<<=".to_string(),
-            Token::AssignSar => ">>=".to_string(),
-            Token::AssignShr => ">>>=".to_string(),
             Token::AssignAdd => "+=".to_string(),
             Token::AssignSub => "-=".to_string(),
             Token::AssignMul => "*=".to_string(),
             Token::AssignDiv => "/=".to_string(),
             Token::AssignMod => "%=".to_string(),
+            Token::AssignLsh => "<<=".to_string(),
+            Token::AssignRsh => ">>=".to_string(),
+            Token::AssignMulMul => "**=".to_string(),
+            Token::AssignColon => ":=".to_string(),
             Token::Comma => ",".to_string(),
-            Token::Or => "||".to_string(),
-            Token::And => "&&".to_string(),
             Token::BitOr => "|".to_string(),
             Token::BitXor => "^".to_string(),
             Token::BitAnd => "&".to_string(),
-            Token::Shl => "<<".to_string(),
-            Token::Sar => ">>".to_string(),
-            Token::Shr => ">>>".to_string(),
             Token::Add => "+".to_string(),
             Token::Sub => "-".to_string(),
             Token::Mul => "*".to_string(),
             Token::Div => "/".to_string(),
             Token::Mod => "%".to_string(),
-            Token::Eq => "=".to_string(),
+            Token::MulMul => "**".to_string(),
+            Token::Eq => "==".to_string(),
             Token::Ne => "!=".to_string(),
             Token::Lt => "<".to_string(),
             Token::Gt => ">".to_string(),
             Token::Lte => "<=".to_string(),
             Token::Gte => ">=".to_string(),
-            Token::In => "in".to_string(),
-            Token::Not => "!".to_string(),
             Token::BitNot => "~".to_string(),
-            Token::Delete => "delete".to_string(),
-            Token::Typeof => "typeof".to_string(),
-            Token::Void => "void".to_string(),
+            Token::Shl => "<<".to_string(),
+            Token::Shr => ">>".to_string(),
+            Token::Exclamation => "!".to_string(),
+            Token::And => "and".to_string(),
+            Token::As => "as".to_string(),
+            Token::Assert => "assert".to_string(),
             Token::Break => "break".to_string(),
-            Token::Case => "case".to_string(),
-            Token::Catch => "catch".to_string(),
+            Token::Impl => "impl".to_string(),
             Token::Continue => "continue".to_string(),
-            Token::Default => "default".to_string(),
-            Token::Do => "do".to_string(),
+            Token::Fn => "fn".to_string(),
+            Token::Del => "del".to_string(),
+            Token::Elif => "elif".to_string(),
             Token::Else => "else".to_string(),
+            Token::Except => "except".to_string(),
             Token::Finally => "finally".to_string(),
             Token::For => "for".to_string(),
-            Token::Function => "def".to_string(),
+            Token::From => "from".to_string(),
+            Token::Global => "global".to_string(),
             Token::If => "if".to_string(),
-            Token::New => "new".to_string(),
+            Token::Use => "use".to_string(),
+            Token::In => "in".to_string(),
+            Token::Is => "is".to_string(),
+            Token::Lambda => "lambda".to_string(),
+            Token::Nonlocal => "nonlocal".to_string(),
+            Token::Not => "not".to_string(),
+            Token::Or => "or".to_string(),
+            Token::Pass => "pass".to_string(),
+            Token::Raise => "raise".to_string(),
             Token::Return => "return".to_string(),
-            Token::Switch => "switch".to_string(),
-            Token::This => "this".to_string(),
-            Token::Throw => "throw".to_string(),
             Token::Try => "try".to_string(),
-            Token::Var => "var".to_string(),
             Token::While => "while".to_string(),
             Token::With => "with".to_string(),
-            Token::Abstract => "abstract".to_string(),
-            Token::Boolean => " bool".to_string(),
-            Token::Byte => "byte".to_string(),
-            Token::Char => "char".to_string(),
-            Token::Class => "class".to_string(),
-            Token::Const => "const".to_string(),
-            Token::Double => "double".to_string(), //
-            Token::Enum => "enum".to_string(), //
-            Token::Export => "export".to_string(), //
-            Token::Extends => "extends".to_string(), //
-            Token::Final => "final".to_string(), //
-            Token::Float => "float".to_string(), //
-            Token::Goto => "goto".to_string(), //
-            Token::Implements => "implements".to_string(), //
-            Token::Import => "import".to_string(), //
-            Token::Int => "int".to_string(), //
-            Token::Interface => "interface".to_string(), //
-            Token::Long => "long".to_string(), //
-            Token::Native => "native".to_string(), //
-            Token::Package => "package".to_string(), //
-            Token::Private => "private".to_string(), //
-            Token::Protected => "protected".to_string(), //
-            Token::Public => "public".to_string(), //
-            Token::Short => "short".to_string(), //
-            Token::Static => "static".to_string(), //
-            Token::Super => "super".to_string(), //
-            Token::Throws => "throws".to_string(), //
-            Token::NullLiteral => "null".to_string(), //
-            Token::TrueLiteral => "true".to_string(), //
-            Token::FalseLiteral => "false".to_string(), //
-            Token::Number(val) => val.into_iter().collect(),
-            Token::String(val) => val.into_iter().collect(),
-            Token::Identifier(val) => val.into_iter().collect(),
+            Token::Yeld => "yeld".to_string(),
+            Token::Bool => "bool".to_string(),
+            Token::Float => "float".to_string(),
+            Token::Int => "int".to_string(),
+            Token::Str => "str".to_string(),
+            Token::Struct => "struct".to_string(),
+            Token::NoneLiteral => "none".to_string(),
+            Token::TrueLiteral => "True".to_string(),
+            Token::FalseLiteral => "False".to_string(),
+            Token::Number{value: val} => val,
+            Token::String{value: val} => val,
+            Token::Identifier{value: val} => val,
             _ => "".to_string()
         }
     }
 
     pub fn is_assignment_op(self) -> bool {
+        //use Self::*;
+        //matches!(self, Assign | AssignBitOr | ....)
         match self {
             Token::Assign => true,
             Token::AssignBitOr => true,
             Token::AssignBitXor => true,
             Token::AssignBitAnd => true,
-            Token::AssignShl => true,
-            Token::AssignSar => true,
-            Token::AssignShr => true,
             Token::AssignAdd => true,
             Token::AssignSub => true,
             Token::AssignMul => true,
@@ -270,9 +218,6 @@ impl Token {
             Token::BitOr => true,
             Token::BitXor => true,
             Token::BitAnd => true,
-            Token::Shl => true,
-            Token::Sar => true,
-            Token::Shr => true,
             Token::Add => true,
             Token::Sub => true,
             Token::Mul => true,
@@ -300,9 +245,6 @@ impl Token {
             Token::BitOr => true,
             Token::BitXor => true,
             Token::BitAnd => true,
-            Token::Shl => true,
-            Token::Sar => true,
-            Token::Shr => true,
             Token::BitNot => true,
             _ => false,
         }
@@ -312,19 +254,9 @@ impl Token {
         match self {
             Token::Not => true,
             Token::BitNot => true,
-            Token::Delete => true,
-            Token::Typeof => true,
-            Token::Void => true,
+            // ??
             Token::Add => true,
             Token::Sub => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_count_op(self) -> bool {
-        match self {
-            Token::Inc => true,
-            Token::Dec => true,
             _ => false,
         }
     }
@@ -344,102 +276,88 @@ impl fmt::Display for Token {
             Token::Colon => "Colon",
             Token::Semicolon => "Semicolon",
             Token::Period => "Period",
-            Token::Conditional => "Conditional",
-            Token::Inc => "Inc",
-            Token::Dec => "Dec",
+            Token::DivDiv => "DivDiv",
+            Token::DivDivEqual => "DivDivEqual",
+            Token::At => "At",
+            Token::AtEqual => "AtEqual",
+            Token::RArrow => "RArrow",
+            Token::Ellipses => "Ellipses",
             Token::Assign => "Assign",
             Token::AssignBitOr => "AssignBitOr",
             Token::AssignBitXor => "AssignBitXor",
             Token::AssignBitAnd => "AssignBitAnd",
-            Token::AssignShl => "AssignShl",
-            Token::AssignSar => "AssignSar",
-            Token::AssignShr => "AssignShr",
             Token::AssignAdd => "AssignAdd",
             Token::AssignSub => "AssignSub",
             Token::AssignMul => "AssignMul",
             Token::AssignDiv => "AssignDiv",
             Token::AssignMod => "AssignMod",
+            Token::AssignLsh => "AssignLsh",
+            Token::AssignRsh => "AssignRsh",
+            Token::AssignMulMul => "AssignMulMul",
+            Token::AssignColon => "AssignColon",
             Token::Comma => "Comma",
-            Token::Or => "Or",
-            Token::And => "And",
             Token::BitOr => "BitOr",
             Token::BitXor => "BitXor",
             Token::BitAnd => "BitAnd",
-            Token::Shl => "Shl",
-            Token::Sar => "Sar",
-            Token::Shr =>  "Shr",
             Token::Add => "Add",
             Token::Sub => "Sub",
             Token::Mul => "Mul",
             Token::Div => "Div",
             Token::Mod => "Mod",
+            Token::MulMul => "MulMul",
             Token::Eq => "Eq",
             Token::Ne => "Ne",
             Token::Lt => "Lt",
             Token::Gt => "Gt",
             Token::Lte => "Lte",
             Token::Gte => "Gte",
-            Token::In => "In",
-            Token::Not => "Not",
             Token::BitNot => "BitNot",
-            Token::Delete => "Delete",
-            Token::Typeof => "Typeof",
-            Token::Void => "Void",
+            Token::Shl => "Shl",
+            Token::Shr => "Shr",
+            Token::Exclamation => "Exclamation",
+            Token::And => "And",
+            Token::As => "As",
+            Token::Assert => "Assert",
             Token::Break => "Break",
-            Token::Case => "Case",
-            Token::Catch => "Catch",
+            Token::Impl => "Impl",
             Token::Continue => "Continue",
-            Token::Default => "Default",
-            Token::Do => "Do",
+            Token::Fn => "Fn",
+            Token::Del => "Del",
+            Token::Elif => "Elif",
             Token::Else => "Else",
+            Token::Except => "Except",
             Token::Finally => "Finally",
             Token::For => "For",
-            Token::Function => "Function",
+            Token::From => "From",
+            Token::Global => "Global",
             Token::If => "If",
-            Token::New => "New",
+            Token::Use => "Use",
+            Token::In => "In",
+            Token::Is => "Is",
+            Token::Lambda => "Lambda",
+            Token::Nonlocal => "Nonlocal",
+            Token::Not => "Not",
+            Token::Or => "Or",
+            Token::Pass => "Pass",
+            Token::Raise => "Raise",
             Token::Return => "Return",
-            Token::Switch => "Switch",
-            Token::This => "This",
-            Token::Throw => "Throw",
             Token::Try => "Try",
-            Token::Var => "Var",
             Token::While => "While",
             Token::With => "With",
-            Token::Abstract => "Abstract",
-            Token::Boolean => " Boolean",
-            Token::Byte => "Byte",
-            Token::Char => "Char",
-            Token::Class => "Class",
-            Token::Const => "Const",
-            Token::Double => "Double",
-            Token::Enum => "Enum",
-            Token::Export => "Export",
-            Token::Extends => "Extends",
-            Token::Final => "Final",
+            Token::Yeld => "Yeld",
+            Token::Bool => "Bool",
             Token::Float => "Float",
-            Token::Goto => "Goto",
-            Token::Implements => "Implements",
-            Token::Import => "Import",
             Token::Int => "Int",
-            Token::Interface => "Interface",
-            Token::Long => "Long",
-            Token::Native => "Native",
-            Token::Package => "Package",
-            Token::Private => "Private",
-            Token::Protected => "Protected",
-            Token::Public => "Public",
-            Token::Short => "Short",
-            Token::Static => "Static",
-            Token::Super => "Super",
-            Token::Throws => "Throws",
-            Token::NullLiteral => "Null",
+            Token::Str => "Str",
+            Token::Struct => "Struct",
+            Token::NoneLiteral => "None",
             Token::TrueLiteral => "True",
             Token::FalseLiteral => "False",
-            Token::Number(_) => "Number",
-            Token::String(_) => "String",
-            Token::Identifier(_) => "Identifier",
+            Token::Number{value: _} => "Number",
+            Token::String{value: _} => "String",
+            Token::Identifier{value: _} => "Identifier",
             Token::Illegal => "Illegal",
-            Token::Comment(_) => "Comment",
+            Token::Comment => "Comment",
         };
         write!(f, "{}", str_val)
     }

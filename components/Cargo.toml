@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "ast",
+    "lex",
+    "parse",
+    "main",
+]
